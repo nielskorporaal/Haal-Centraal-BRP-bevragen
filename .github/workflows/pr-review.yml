@@ -18,10 +18,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure base url for preview
+      - name: Configuration for preview
         if: ${{ github.event.action == 'opened' || github.event.action == 'reopened' || github.event.action == 'synchronize' }}
         run: |
           sed -i 's|baseurl:.*|baseurl: /Haal-Centraal-BRP-bevragen/pr-preview/pr-${{ github.event.number }}|' docs/_config.yml
+          sed -i 's|v2SpecUrl:.*|v2SpecUrl: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.head_ref }}/specificatie/resolved/openapi.yaml|' docs/_config.yml
 
       - name: Build
         if: ${{ github.event.action == 'opened' || github.event.action == 'reopened' || github.event.action == 'synchronize' }}
