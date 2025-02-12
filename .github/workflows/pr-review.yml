@@ -31,5 +31,4 @@ jobs:
           preview-branch: master
           umbrella-dir: docs/pr-preview
           pages-base-path: docs
-          pages-base-url: /Haal-Centraal-BRP-bevragen/pr-preview/pr-${{ github.event.number }}
           
