@@ -762,7 +762,7 @@ components:
             personen:
               type: array
               description: |
-                * **geslacht** - wordt gevuld met waarden voor 'Geslacht' in 'tabelwaarden.csv'.
+                * **personen** - array met personen.
               items:
                 $ref: '#/components/schemas/PersoonBeperkt'
     ZoekMetNaamEnGemeenteVanInschrijvingResponse:
@@ -773,7 +773,7 @@ components:
             personen:
               type: array
               description: |
-                * **geslacht** - wordt gevuld met waarden voor 'Geslacht' in 'tabelwaarden.csv'.
+                * **personen** - array met personen.
               items:
                 $ref: '#/components/schemas/PersoonBeperkt'
     ANummer:
@@ -1780,7 +1780,7 @@ components:
             personen:
               type: array
               description: |
-                * **geslacht** - wordt gevuld met waarden voor 'Geslacht' in 'tabelwaarden.csv'.
+                * **personen** - array met personen.
               items:
                 $ref: '#/components/schemas/Persoon'
     ZoekMetPostcodeEnHuisnummerResponse:
@@ -1791,7 +1791,7 @@ components:
             personen:
               type: array
               description: |
-                * **geslacht** - wordt gevuld met waarden voor 'Geslacht' in 'tabelwaarden.csv'.
+                * **personen** - array met personen.
               items:
                 $ref: '#/components/schemas/PersoonBeperkt'
     ZoekMetStraatHuisnummerEnGemeenteVanInschrijvingResponse:
@@ -1802,7 +1802,7 @@ components:
             personen:
               type: array
               description: |
-                * **geslacht** - wordt gevuld met waarden voor 'Geslacht' in 'tabelwaarden.csv'.
+                * **personen** - array met personen.
               items:
                 $ref: '#/components/schemas/PersoonBeperkt'
     ZoekMetNummeraanduidingIdentificatieResponse:
@@ -1813,7 +1813,7 @@ components:
             personen:
               type: array
               description: |
-                * **geslacht** - wordt gevuld met waarden voor 'Geslacht' in 'tabelwaarden.csv'.
+                * **personen** - array met personen.
               items:
                 $ref: '#/components/schemas/PersoonBeperkt'
     GezagPersoonBeperkt:
@@ -1831,7 +1831,7 @@ components:
             personen:
               type: array
               description: |
-                * **geslacht** - wordt gevuld met waarden voor 'Geslacht' in 'tabelwaarden.csv'.
+                * **personen** - array met personen.
               items:
                 $ref: '#/components/schemas/GezagPersoonBeperkt'
     InvalidParam:
