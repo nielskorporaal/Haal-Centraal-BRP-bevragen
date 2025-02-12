@@ -18,6 +18,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Configure base url for preview
+        run: |
+          sed -i 's|baseurl:.*|baseurl: /Haal-Centraal-BRP-bevragen/pr-preview/pr-${{ github.event.number }}|' docs/_config.yml
+
       - name: Build
         uses: actions/jekyll-build-pages@v1
         with:
