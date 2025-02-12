@@ -1,11 +1,11 @@
 ---
 layout: page-with-side-nav
-title: Persoon beperkt: overlijden
+title: Persoon beperkt - overlijden
 ---
 # language: nl  
 
 
-# Functionaliteit: Persoon beperkt: overlijden
+# Functionaliteit: Persoon beperkt - overlijden
 
 
 Wanneer een consumer van de BRP API personen zoekt inclusief overleden personen  
