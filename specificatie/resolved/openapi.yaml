@@ -1780,7 +1780,7 @@ components:
             personen:
               type: array
               description: |
-                * **personen** - array met personen.
+                * **personen** - array met BRP personen.
               items:
                 $ref: '#/components/schemas/Persoon'
     ZoekMetPostcodeEnHuisnummerResponse:
