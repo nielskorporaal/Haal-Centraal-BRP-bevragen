@@ -2624,7 +2624,7 @@
             "properties": {
               "personen": {
                 "type": "array",
-                "description": "* **personen** - array met personen.\n",
+                "description": "* **personen** - array met BRP personen.\n",
                 "items": {
                   "$ref": "#/components/schemas/Persoon"
                 }
