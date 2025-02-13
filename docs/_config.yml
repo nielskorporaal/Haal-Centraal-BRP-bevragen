@@ -1,6 +1,6 @@
 baseurl: "/Haal-Centraal-BRP-bevragen"
 pagesBaseUrl: https://BRP-API.github.io
-repoUrl: https://github.com/BRP-API/Haal-Centraal-BRP-bevragen
+repoUrl: https://github.com/nielskorporaal/Haal-Centraal-BRP-bevragen
 mainBranchUrl: https://github.com/BRP-API/Haal-Centraal-BRP-bevragen/blob/master
 devBranchUrl: https://github.com/BRP-API/Haal-Centraal-BRP-bevragen/blob/develop
 v1SpecUrl: https://raw.githubusercontent.com/BRP-API/Haal-Centraal-BRP-bevragen/v1.3.1/specificatie/genereervariant/openapi.yaml
@@ -57,6 +57,6 @@ remote_theme: VNG-Realisatie/jekyll-theme-haal-centraal
 
 github: BRP-API/Haal-Centraal-BRP-bevragen
 
-theme: jekyll-theme-time-machine
+# theme: jekyll-theme-time-machine
 
 project_name: /Haal-Centraal-BRP-bevragen
