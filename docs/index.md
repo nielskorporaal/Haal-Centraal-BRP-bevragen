@@ -4,7 +4,9 @@ title: Haal Centraal BRP Personen
 ---
 # {{ site.apiname }}
 
-![lint oas]({{ site.repoUrl }}/workflows/lint-oas/badge.svg)
+![lint-oas]({{ site.repoUrl }}/actions/workflows/lint-oas.yml/badge.svg)
+![code-ql]({{ site.repoUrl }}/actions/workflows/codeql.yml/badge.svg)
+
 
 API voor het zoeken en raadplegen van actuele personen, partners, ouders en kinderen uit de basisregistratie personen (BRP), inclusief de registratie niet-ingezeten (RNI).
 De {{ site.apiname }} biedt naast persoonsgegevens uit de BRP ook informatieproducten:
