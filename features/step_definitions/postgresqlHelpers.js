@@ -119,7 +119,7 @@ async function deleteInsertedRows(client, sqlData) {
     let adresData = [];
 
     for(const sqlDataElement of sqlData) {
-        if (sqlDataElement['adres'] !== undefined) {
+        if (sqlDataElement['adres']) {
             adresData.push(sqlDataElement);
         }
         else {
@@ -168,7 +168,7 @@ async function rollbackSqlStatements(sqlContext, sqlData, pool) {
 function getElementValue(data, elementName) {
     const elem = data.find(e => e[0] === elementName);
 
-    return elem !== undefined
+    return elem
         ? Number(elem[1])
         : undefined;
 }
@@ -189,6 +189,15 @@ async function deleteAdresRij(client, sqlData) {
     }
 }
 
+function deleteAutorisatieStatement(id) {
+    const statement = {
+        text: `DELETE FROM public.lo3_autorisatie WHERE afnemer_code=$1`,
+        values: [id]
+    };
+
+    return statement;
+}
+
 async function deleteAutorisatieRecords(client, sqlData) {
     if(sqlData === undefined || sqlData['autorisatie'] === undefined) {
         return;
@@ -201,7 +210,7 @@ async function deleteAutorisatieRecords(client, sqlData) {
             continue;
         }
 
-        await ExecuteAndLogDeleteStatement(client, 'autorisatie', id);
+        await ExecuteAndLogStatement(client, deleteAutorisatieStatement(id));
     }
 }
 
@@ -238,7 +247,7 @@ async function deleteRecords(client, sqlData, deleteIndividualRecords = true) {
     // bijhouden van reeds opgeschoonde tabellen, zodat deze niet opnieuw wordt opgeschoond met als gevolg rowCount == 0
     let opgeschoondeTabellen = [];
     for(const key of Object.keys(sqlData)) {
-        const tabelNaam = key.replace(/-\w*/g, '');
+        const tabelNaam = key.replaceAll(/-\w*/g, '');
 
         if(['autorisatie', 'ouder', 'kind', 'partner'].includes(tabelNaam)) {
             continue;
@@ -321,7 +330,7 @@ async function executeSql(client, sqlData) {
         for(const rowData of sqlData[key]) {
             const data = createStatementData(key, plId, rowData);
 
-            const name = key.replace(/-\d/g, '');
+            const name = key.replaceAll(/-\d/g, '');
 
             await ExecuteAndLogStatement(client, insertIntoStatement(name, data));
         }

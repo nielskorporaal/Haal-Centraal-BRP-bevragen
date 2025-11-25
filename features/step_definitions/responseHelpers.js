@@ -13,7 +13,7 @@ function verifyAantal(context) {
         return;
     }
 
-    context.verifyAantal.forEach((va) => {
+    for (const va of context.verifyAantal) {
         const { naamColObj, naamSubColObj, aantal } = va;
 
         const actual = context?.response?.data[toCollectieNaam(naamColObj)];
@@ -31,13 +31,13 @@ function verifyAantal(context) {
 
             actualSubCollectie.length.should.equal(Number(aantal), `aantal ${naamSubColObj} is ongelijk aan ${aantal}\nactual: ${JSON.stringify(context.response.data, undefined, '\t')}`);
         }
-    });
+    }
 }
 
 function vergelijkActualMetExpected(context, inAnyOrder = true) {
     const actual = stringifyValues(context.response.data);
 
-    const expected = context.expected !== undefined
+    const expected = context.expected
         ? context.expected
         : {};
 
@@ -56,11 +56,11 @@ function vergelijkActualMetExpected(context, inAnyOrder = true) {
 }
 
 function valideer200Response(context, inAnyOrder = true) {
+    context.response?.status?.should.equal(200, `response body: ${JSON.stringify(context.response?.data, undefined, '\t')}`);
+
     if (!verifyResponse(context)) {
         return;
     }
-
-    context.response.status?.should.equal(200, `response body: ${JSON.stringify(context.response.data, undefined, '\t')}`);
 
     should.exist(context.response?.data, 'geen response body');
 

@@ -1,39 +1,72 @@
 const { toDbTableName } = require('./brp');
 
-function createInsertIntoPersoonslijstStatement(inschrijving) {
-    const tableName = toDbTableName('inschrijving');
+function createAndReturnInsertedStatement(entityName, primaryKey, entity, additionalColumns = {}) {
+    const tableName = toDbTableName(entityName);
 
     let statementText = `INSERT INTO public.${tableName}(`;
     let values = [];
 
-    statementText += 'pl_id';
+    // Add primary key and additional columns
+    statementText += primaryKey;
+    for (const column of Object.keys(additionalColumns)) {
+        statementText += `,${column}`;
+    }
 
-    statementText += ',' + 'mutatie_dt';
-
-    Object.keys(inschrijving).forEach(key => {
-        statementText += ',' + key;
-    });
+    // Add entity columns
+    for (const key of Object.keys(entity)) {
+        statementText += `,${key}`;
+    }
 
     statementText += ') VALUES(';
 
-    statementText += '(SELECT COALESCE(MAX(pl_id), 0)+1 FROM public.lo3_pl)';
+    // Add primary key value
+    statementText += `(SELECT COALESCE(MAX(${primaryKey}), 0)+1 FROM public.${tableName})`;
 
-    statementText += ',' + 'current_timestamp';
+    // Add additional column values
+    for (const value of Object.values(additionalColumns)) {
+        statementText += `,${value}`;
+    }
 
-    Object.keys(inschrijving).forEach((key,index) => {
-        values.push(inschrijving[key]);
-        statementText += ',' + `$${index+1}`;
-    });
+    // Add entity values
+    let index = 0;
+    for (const key of Object.keys(entity)) {
+        values.push(entity[key]);
+        statementText += `,$${index + 1}`;
+        index++;
+    }
 
-    statementText += ')';
-
-    statementText += ' RETURNING *';
+    statementText += ') RETURNING *';
 
     return {
         text: statementText,
-        categorie: 'inschrijving',
+        categorie: entityName,
         values: values
     };
+}
+
+function createInsertIntoPersoonslijstStatement(inschrijving) {
+    return createAndReturnInsertedStatement(
+        'inschrijving',
+        'pl_id',
+        inschrijving,
+        { mutatie_dt: 'current_timestamp' }
+    );
+}
+
+function createInsertIntoAdresStatement(adres) {
+    return createAndReturnInsertedStatement(
+        'adres',
+        'adres_id',
+        adres
+    );
+}
+
+function createInsertAutorisatieIntoStatement(autorisatie) {
+    return createAndReturnInsertedStatement(
+        'autorisatie',
+        'autorisatie_id',
+        autorisatie
+    );
 }
 
 function createInsertIntoStatement(entityNaam, entity) {
@@ -42,21 +75,25 @@ function createInsertIntoStatement(entityNaam, entity) {
     let statementText = `INSERT INTO public.${tableName}(`;
     let values = [];
 
-    Object.keys(entity).forEach((key, index) => {
+    let index = 0;
+    for (const key of Object.keys(entity)) {
         statementText += index === 0
             ? key
             : `,${key}`;
-    });
+        index++;
+    }
 
     statementText += ') VALUES(';
 
-    Object.keys(entity).forEach((key, index) => {
+    index = 0;
+    for (const key of Object.keys(entity)) {
         values.push(entity[key]);
 
         statementText += index === 0
             ? `$${index+1}`
             : `,$${index+1}`;
-    });
+        index++;
+    }
 
     statementText += ')';
 
@@ -67,6 +104,80 @@ function createInsertIntoStatement(entityNaam, entity) {
     };
 }
 
+function generateAdresSqlStatements(adressen) {
+    let sqlStatements = [];
+
+    if (!adressen) {
+        return sqlStatements;
+    }
+
+    for (const adres of adressen) {
+        let adresStatements = {
+            stap: adres.id,
+            statements: []
+        };
+
+        adresStatements.statements.push(createInsertIntoAdresStatement(adres.adres));
+
+        sqlStatements.push(adresStatements);
+    }
+
+    return sqlStatements;
+}
+
+function generateAutorisatieSqlStatements(autorisaties) {
+    let sqlStatements = [];
+
+    if (!autorisaties) {
+        return sqlStatements;
+    }
+
+    for (const autorisatie of autorisaties) {
+        let autorisatieStatements = {
+            stap: autorisatie.id,
+            statements: []
+        };
+
+        autorisatieStatements.statements.push(createInsertAutorisatieIntoStatement(autorisatie.autorisatie));
+
+        sqlStatements.push(autorisatieStatements);
+    }
+
+    return sqlStatements;
+}
+
+function getBsn(persoon) {
+    return persoon.persoon.at(-1).burger_service_nr;
+}
+
+function generatePersoonSqlStatements(persoon) {
+    let persoonStatements = {
+        stap: persoon.id,
+        statements: []
+    };
+
+    for (const key of Object.keys(persoon)) {
+        let statement;
+        switch (key) {
+            case 'id':
+                break;
+            case 'inschrijving':
+                statement = createInsertIntoPersoonslijstStatement(persoon.inschrijving);
+                break;
+            default:
+                for (const p of persoon[key]) {
+                    persoonStatements.statements.push(createInsertIntoStatement(key, p));
+                }
+                break;
+        }
+
+        if (statement) {
+            persoonStatements.statements.push(statement);
+        }
+    }
+    return persoonStatements;
+}
+
 function generateSqlStatementsFrom(data) {
     if(!data) {
         global.logger.warn('no data to generate sql statements');
@@ -74,37 +185,23 @@ function generateSqlStatementsFrom(data) {
     }
 
     let sqlStatements = {
-        personen: []
+        personen: [],
+        adressen: generateAdresSqlStatements(data.adressen),
+        autorisaties: generateAutorisatieSqlStatements(data.autorisaties)
     };
 
-    data.personen.forEach(persoon => {
-        let persoonStatements = {
-            stap: persoon.id,
-            statements: []
-        };
+    if (!data.personen) {
+        return sqlStatements;
+    }
 
-        Object.keys(persoon).forEach(key => {
-            let statement;
-            switch(key) {
-                case 'id':
-                    break;
-                case 'inschrijving':
-                    statement = createInsertIntoPersoonslijstStatement(persoon.inschrijving);
-                    break;
-                default:
-                    persoon[key].forEach(p => {
-                        persoonStatements.statements.push(createInsertIntoStatement(key, p));
-                    });
-                    break;
-            }
-
-            if(statement) {
-                persoonStatements.statements.push(statement);
-            }
-        });
-
-        sqlStatements.personen.push(persoonStatements);
-    });
+    for (const persoon of data.personen) {
+        if(getBsn(persoon) === undefined) {
+            global.logger.info('persoon zonder burgerservicenummer. Geen sql statements generatie', persoon);
+        }
+        else {
+            sqlStatements.personen.push(generatePersoonSqlStatements(persoon));
+        }
+    }
 
     return sqlStatements;
 }
