@@ -6,13 +6,13 @@ function createHeaders(dataTable, extraHeaders) {
     let headers = {};
 
     if(dataTable !== undefined){
-        dataTable.hashes()
+        const filteredParams = dataTable.hashes()
         .filter(function(param) {
             return param.naam.startsWith("header:");
-        })
-        .forEach(function(param) {
-            headers[param.naam.slice(8)] = param.waarde;
         });
+        for (const param of filteredParams) {
+            headers[param.naam.slice(8)] = param.waarde;
+        }
     }
 
     if(headers.Accept === undefined) {
@@ -21,9 +21,9 @@ function createHeaders(dataTable, extraHeaders) {
     if(headers["Content-Type"] === undefined) {
         headers["Content-Type"] = "application/json";
     }
-    extraHeaders.forEach(function(header){
+    for (const header of extraHeaders) {
         headers[header.naam] = header.waarde;
-    });
+    }
 
     return headers;
 }
@@ -45,45 +45,50 @@ function isArrayParameter(type, param, baseUrl = undefined) {
            (baseUrl !== undefined && baseUrl.toLowerCase().includes('gezag'));
 }
 
+function mapToRequestBody(filteredParams, type, baseUrl) {
+    let requestBody = {};
+
+    for (const param of filteredParams) {
+        if (param.naam === '' && param.waarde === '') {
+            // do nothing
+        }
+        else if (isArrayParameter(type, param, baseUrl)) {
+                requestBody[param.naam] = param.waarde === '' 
+                    ? []
+                    : param.waarde.split(',');
+        }
+        else if (param.naam === 'burgerservicenummer (als string)') {
+            requestBody['burgerservicenummer'] = param.waarde;
+        }
+        else if (param.naam === 'fields (als string)') {
+            requestBody['fields'] = param.waarde;
+        }
+        else if (param.waarde === '(131 maal aNummer)') {
+            requestBody[param.naam] = [];
+            for(let count=0; count<=131; count++) {
+                requestBody[param.naam].push('aNummer');
+            }
+        }
+        else {
+            requestBody[param.naam] = toDateOrString(param.waarde, true);
+        }
+    }
+    return requestBody;
+}
+
 function createRequestBody(dataTable, baseUrl = undefined) {
     if(dataTable === undefined) {
         return undefined;
     }
     
-    let requestBody = {};
     const type = dataTable.hashes().find(param => param.naam === 'type')?.waarde;
 
-    dataTable.hashes()
+    const filteredParams = dataTable.hashes()
             .filter(function(param) {
                 return !param.naam.startsWith("header:");
-            })
-            .forEach(function(param) {
-                if (param.naam === '' && param.waarde === '') {
-                    // do nothing
-                }
-                else if (isArrayParameter(type, param, baseUrl)) {
-                        requestBody[param.naam] = param.waarde === '' 
-                            ? []
-                            : param.waarde.split(',');
-                }
-                else if (param.naam === 'burgerservicenummer (als string)') {
-                    requestBody['burgerservicenummer'] = param.waarde;
-                }
-                else if (param.naam === 'fields (als string)') {
-                    requestBody['fields'] = param.waarde;
-                }
-                else if (param.waarde === '(131 maal aNummer)') {
-                    requestBody[param.naam] = [];
-                    for(let count=0; count<=131; count++) {
-                        requestBody[param.naam].push('aNummer');
-                    }
-                }
-                else {
-                    requestBody[param.naam] = toDateOrString(param.waarde, true);
-                }
             });
 
-    return requestBody;
+    return mapToRequestBody(filteredParams, type, baseUrl);
 }
 
 async function getOAuthAccessToken(accessTokenUrl, oAuthSettings) {
@@ -105,14 +110,16 @@ async function getOAuthAccessToken(accessTokenUrl, oAuthSettings) {
         return response.data.access_token
     }
     catch(e) {
-        global.logger.error(e);
+        globalThis.logger.error(e);
     }
 }
 
 async function createBearerAuthorizationHeader(afnemerId, gemeenteCode, oAuthSettings) {
+    globalThis.logger.info(`createBearerAuthorizationHeader. afnemer: ${afnemerId}, gemeente: ${gemeenteCode}`);
+
     const oAuthClientSettings = oAuthSettings.clients.find(client => client.afnemerID === afnemerId && client.gemeenteCode === gemeenteCode);
     if(oAuthClientSettings === undefined) {
-        global.logger.warn(`geen oAuthSettings gevonden voor afnemerId '${afnemerId}' en gemeenteCode: '${gemeenteCode}'`);
+        globalThis.logger.warn(`geen oAuthSettings gevonden voor afnemerId '${afnemerId}' en gemeenteCode: '${gemeenteCode}'`);
         return undefined;
     }
 
@@ -120,18 +127,18 @@ async function createBearerAuthorizationHeader(afnemerId, gemeenteCode, oAuthSet
         ? afnemerId
         : `${afnemerId}-${gemeenteCode}`;
 
-    if(global.accessToken === undefined) {
-        global.accessToken = {};
+    if(globalThis.accessToken === undefined) {
+        globalThis.accessToken = {};
     }
-    if(global.accessToken[key] === undefined) {
-        global.logger.debug('geen access token. Authenticate');
-        global.accessToken[key] = await getOAuthAccessToken(oAuthSettings.accessTokenUrl, oAuthClientSettings);
+    if(globalThis.accessToken[key] === undefined) {
+        globalThis.logger.debug('geen access token. Authenticate');
+        globalThis.accessToken[key] = await getOAuthAccessToken(oAuthSettings.accessTokenUrl, oAuthClientSettings);
     }
 
     return [
         {
             naam: 'Authorization',
-            waarde: 'Bearer ' + global.accessToken[key]
+            waarde: 'Bearer ' + globalThis.accessToken[key]
         }
     ];
 }
@@ -145,13 +152,19 @@ function createBasicAuthorizationHeader(afnemerId, gemeenteCode) {
     ]
 }
 
+async function createAuthorizationHeader(context, afnemerId, gemeenteCode) {
+    return context.oAuth.enable
+        ? await createBearerAuthorizationHeader(afnemerId, gemeenteCode, context.oAuth)
+        : createBasicAuthorizationHeader(afnemerId, gemeenteCode);
+}
+
 function addDefaultAutorisatieSettings(context, afnemerID) {
     let sqlData = context.sqlData;
     if(sqlData === undefined) {
         sqlData = [{}];
     }
     
-    const heeftAutorisatieSettings = sqlData.filter(s => s['autorisatie'] !== undefined).length > 0;
+    const heeftAutorisatieSettings = sqlData.some(s => s['autorisatie'] !== undefined);
     if(!heeftAutorisatieSettings){
         let data = sqlData.at(-1);
         data['autorisatie'] = createGegevensgroepAutorisatie(context, afnemerID, undefined);
@@ -169,7 +182,7 @@ async function sendRequest(config) {
     }
 }
 
-async function sendBevragenRequest(baseUrl, url, extraHeaders, dataTable, httpMethod) {
+async function sendBevragenRequest(context, baseUrl, url, extraHeaders, dataTable, httpMethod) {
     const config = {
         method: httpMethod,
         url: url ? `/${url}` : '',
@@ -178,7 +191,11 @@ async function sendBevragenRequest(baseUrl, url, extraHeaders, dataTable, httpMe
         headers: createHeaders(dataTable, extraHeaders)
     };
 
-    global.logger.debug(config);
+    globalThis.logger.info('request', config);
+
+    if(context.isStapDocumentatieScenario) {
+        return;
+    }
 
     return await sendRequest(config);
 }
@@ -188,14 +205,26 @@ async function handleRequest(context, endpoint, dataTable, httpMethod='post') {
     const gemeenteCode = context.gemeenteCode;
     const url = context.baseUrl;
 
-    const authzHeader = context.oAuth.enable
-        ? await createBearerAuthorizationHeader(afnemerId, gemeenteCode, context.oAuth)
-        : createBasicAuthorizationHeader(afnemerId, gemeenteCode);
-    if(authzHeader === undefined) {
+    const extraHeaders = context.isStapDocumentatieScenario
+        ? [
+            {
+                naam: 'stap-documentatie-scenario',
+                waarde: 'true'
+            }
+        ]
+        : await createAuthorizationHeader(context, afnemerId, gemeenteCode);
+
+    if(extraHeaders === undefined) {
         return;
     }
+    if(context.addAcceptGezagVersionHeader) {
+        extraHeaders.push({
+            naam: 'accept-gezag-version',
+            waarde: '2'
+        });
+    }
 
-    context.response = await sendBevragenRequest(url, endpoint, authzHeader, dataTable, httpMethod);
+    context.response = await sendBevragenRequest(context, url, endpoint, extraHeaders, dataTable, httpMethod);
 }
 
 module.exports = {
