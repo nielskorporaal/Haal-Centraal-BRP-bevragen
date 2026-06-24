@@ -8,6 +8,4 @@ components:
     Geslachtsaanduiding:
       allOf:
         - $ref: '../waardetabel-v1.yaml#/components/schemas/Waardetabel'
-        - example:
-            code: M
-            omschrijving: man
+        - type: object
