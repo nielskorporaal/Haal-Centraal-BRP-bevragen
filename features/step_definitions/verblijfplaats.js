@@ -37,7 +37,7 @@ function createVerblijfplaatsVoorkomen(sqlData, adresIndex, dataTable, isWoonadr
         sqlData['verblijfplaats'] = [];
     }
 
-    sqlData['verblijfplaats'].forEach(function(data) {
+    for (const data of sqlData['verblijfplaats']) {
         let volgNr = data.find(el => el[0] === 'volg_nr');
         if(volgNr[1] === '0' && isCorrectie) {
             data.push(['onjuist_ind','O']);
@@ -46,7 +46,7 @@ function createVerblijfplaatsVoorkomen(sqlData, adresIndex, dataTable, isWoonadr
             }
         }
         volgNr[1] = Number(volgNr[1]) + 1 + '';
-    });
+    }
 
     sqlData['verblijfplaats'].push(createVerblijfplaatsVoorkomenData(dataTable, adresIndex, isWoonadres));
 }
@@ -74,8 +74,8 @@ function createPersoonMetVerblijfplaats(context, burgerservicenummer, dataTable)
     createVerblijfplaatsVoorkomen(sqlData, undefined, dataTable, undefined, false);
 }
 
-function createWoonadres(context, adresId, dataTable) {
-    let sqlData = context.sqlData.at(-1);
+function createWoonadres(context, adresId, dataTable, index=-1) {
+    let sqlData = context.sqlData.at(index);
 
     createVerblijfplaatsVoorkomen(sqlData, getAdresIndex(context, adresId), dataTable, true, false);
 }
